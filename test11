@@ -1,0 +1,2 @@
+(define-fun f (crab bool)(a int)(x bool) bool (let (v (if true true true)) (let (c 3) (not false ) ) ) )
+(print (f false 10 20 23 30))

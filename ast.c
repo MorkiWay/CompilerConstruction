@@ -15,12 +15,13 @@ void insert_parent(struct ast* p) {
   }
 }
 
-void fill_ast_node(struct ast** t, int val, char* token, bool is_leaf, int ntoken){
+void fill_ast_node(struct ast** t, int val, char* token, bool is_leaf, int ntoken, char type){
   (*t) = (struct ast*)malloc(sizeof(struct ast));
   (*t)->id = val;                                     //set value into id field
   (*t)->next = NULL;                                  //set next pointer to NULL
   (*t)->token = token;
   (*t)->is_leaf = is_leaf;
+  (*t)->type = type;
   (*t)->ntoken = ntoken;
   if (ast_child_root != NULL){                          //if child doesnot exist,
     (*t)->child = ast_child_root;                     //set current child root pointer to child field
@@ -31,12 +32,12 @@ void fill_ast_node(struct ast** t, int val, char* token, bool is_leaf, int ntoke
   }
 }
 
-void insert_node_tmp(int val, char* token, bool is_leaf, int ntoken){
+void insert_node_tmp(int val, char* token, bool is_leaf, int ntoken, char type){
   if (ast_list_root == NULL){                               //Create a new node and set the value if root is empty
-    fill_ast_node(&ast_list_root, val, token, is_leaf, ntoken);
+    fill_ast_node(&ast_list_root, val, token, is_leaf, ntoken, type);
   } else {                                                  //Else create a ast graph node and assign it to next
     struct ast* ptr;                                        //Create a temp pointer
-    fill_ast_node(&ptr, val, token, is_leaf, ntoken);
+    fill_ast_node(&ptr, val, token, is_leaf, ntoken, type);
 
     //Traverse root and set the new pointer at the next of last node
     struct ast** tmp = &ast_list_root;
@@ -47,9 +48,9 @@ void insert_node_tmp(int val, char* token, bool is_leaf, int ntoken){
   }
 }
 
-int insert_node(char* token, int ntoken) {
+int insert_node(char* token, int ntoken, char type) {
   current_node_id++;
-  insert_node_tmp(current_node_id, token, ast_child_root == NULL, ntoken);
+  insert_node_tmp(current_node_id, token, ast_child_root == NULL, ntoken, type);
   return current_node_id;
 }
 

@@ -1,0 +1,2 @@
+(define-fun f (a int) int 1)
+(print false)

@@ -13,7 +13,7 @@
 
 struct ast;
 struct ast_child {struct ast* id; struct ast_child* next; }; //Dynamic data structure for the list of children
-struct ast {int id; char *token; bool is_leaf; int ntoken; char *fun; struct ast_child* child; struct ast* parent; struct ast* next; char type;}; //Dynamic data structure for the AST. Each node points to a terminal/nonterminal and its children
+struct ast {int id; char *token; bool is_leaf; int ntoken; char *fun; struct ast_child* child; struct ast* parent; struct ast* next; char type; char stat;}; //Dynamic data structure for the AST. Each node points to a terminal/nonterminal and its children
 
 void insert_child(int val);       // Helper methods to specify child/children for the upcoming node
 void insert_children(int, ...);   // Variadic version (expects the # of children to be given in the first place)

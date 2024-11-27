@@ -23,6 +23,7 @@ void fill_ast_node(struct ast** t, int val, char* token, bool is_leaf, int ntoke
   (*t)->is_leaf = is_leaf;
   (*t)->type = type;
   (*t)->ntoken = ntoken;
+  (*t)->stat = 'u';
   if (ast_child_root != NULL){                          //if child doesnot exist,
     (*t)->child = ast_child_root;                     //set current child root pointer to child field
     ast_child_root = NULL;                              //Set the child root to NULL as we intend to set a new list

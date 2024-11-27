@@ -1,2 +1,2 @@
-(define-fun f (a int) int 1)
-(print false)
+(define-fun f (a bool)(b int) int 1)
+(print (f (and (not true) false) 102) )

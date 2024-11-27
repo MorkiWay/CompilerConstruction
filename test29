@@ -1,0 +1,2 @@
+(define-fun sus int 1)
+(print (+ sus false))

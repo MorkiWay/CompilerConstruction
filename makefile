@@ -2,7 +2,7 @@ CC	= gcc
 YACC= yacc
 LEX	= lex
 
-comp:	y.tab.c lex.yy.c ast.c comp.c
+comp:	y.tab.c lex.yy.c ast.c comp.c cfg.h semantics_utils.h
 	$(CC) lex.yy.c y.tab.c ast.c comp.c -o comp
 
 y.tab.c: parser.y

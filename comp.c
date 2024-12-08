@@ -154,6 +154,22 @@ int main (int argc, char **argv) {
 		node=find_ast_node(i);
 	}
 
+
+		
+	struct cfg_node* cfg = malloc(sizeof(struct cfg_node)*size_ast);
+	for (int i=0; i<size_ast; i++)
+	{
+			cfg[i].points1=0;
+			cfg[i].points2=0;
+			cfg[i].id=0;
+			cfg[i].head=false;
+			cfg[i].args=0;
+			cfg[i].calls[0]='\0';
+	}
+
+
+
+
 	//printf("solving last types\n"); fflush(stdout);
 	//solve types of whole tree
 	//int finds=0;
@@ -163,7 +179,7 @@ int main (int argc, char **argv) {
 		if (	strcmp(node->token,"+")==0 || strcmp(node->token,"-")==0 || strcmp(node->token,"*")==0 ||
 			strcmp(node->token,"div")==0 || strcmp(node->token,"mod")==0|| strcmp(node->token,"<")==0 ||
 			strcmp(node->token,"<=")==0 || strcmp(node->token,"=")==0 || strcmp(node->token,">=")==0 ||
-			strcmp(node->token,"<")==0 ) //jesus
+			strcmp(node->token,">")==0 ) //jesus
 		{
 			int kids=get_child_num(node);
 			for (int p=1; p<=kids; p++)
@@ -196,6 +212,10 @@ int main (int argc, char **argv) {
 				//printf("ONE MATCH\n");
 				if(temp_func_node->finds>0)
 				{
+					
+					strcpy(cfg[node->id].calls,node->token);
+					//printf("FUNCTION CALL FOUND %s\n", node->token);	
+				
 					//printf("%d\t%s matches a function declaration\n",node->id,node->token);
 					//printf("%d %d\n",temp_func_node->fun.args,get_child_num(node));
 					if (temp_func_node->fun.args!=get_child_num(node))
@@ -256,6 +276,7 @@ int main (int argc, char **argv) {
  	fprintf(cfp, "digraph print {\n");
 	
 	node=find_ast_node(1);
+
 	
 	while (node!=NULL)
 	{
@@ -279,7 +300,13 @@ int main (int argc, char **argv) {
 				fprintf(cfp,"%d [label=\"%s\"];\n",get_child(node,1)->id,get_child(node,1)->token);
 				fprintf(cfp,"%d->%d\n",get_child(node,1)->id,find_ast_node(base_node->id+offset)->id);
 
-				say_and_point_to(find_ast_node(base_node->id+offset),get_child(node,get_child_num(node))->id);
+				cfg[get_child(node,1)->id].id=get_child(node,1)->id;
+				cfg[get_child(node,1)->id].points1=find_ast_node(base_node->id+offset)->id;
+				strcpy(cfg[get_child(node,1)->id].content,get_child(node,1)->token);
+				cfg[get_child(node,1)->id].head=true;
+				cfg[get_child(node,1)->id].args=get_child_num(node)-3;
+
+				say_and_point_to(find_ast_node(base_node->id+offset),get_child(node,get_child_num(node))->id,cfg);
 			}
 			else
 			{
@@ -293,12 +320,181 @@ int main (int argc, char **argv) {
 				//printf("%s POINTS to %d\n",get_child(node,1)->token,find_ast_node(base_node->id+offset)->id); //name of starting node
 				fprintf(cfp,"%d [label=\"%s\"];\n",get_child(node,1)->id,get_child(node,1)->token);
 				fprintf(cfp,"%d->%d\n",get_child(node,1)->id,find_ast_node(base_node->id+offset)->id);
-				say_and_point_to(find_ast_node(base_node->id+offset),node->id-1);
+				say_and_point_to(find_ast_node(base_node->id+offset),node->id-1,cfg);
+
+				
+				cfg[get_child(node,1)->id].id=get_child(node,1)->id;
+				cfg[get_child(node,1)->id].points1=find_ast_node(base_node->id+offset)->id;
+				strcpy(cfg[get_child(node,1)->id].content,get_child(node,1)->token);
+				cfg[get_child(node,1)->id].head=true;
+
+
+
 			}
 
 		}
 		node=node->next;
 	}
+/*
+ for (int i=0; i <size_ast; i++)
+  {
+	if (cfg[i].id!=0)
+		printf("CFG NODE: %d -> %d %d \t%s\n",cfg[i].id,cfg[i].points1,cfg[i].points2,cfg[i].content);
+	else
+		printf("CFG NODE: %d UNUSED\n",i);
+
+  }
+*/
+
+int cur_blocks=size_ast;
+for (int i=0; i < size_ast; i++)
+  {
+	if (cfg[i].id!=0 && cfg[i].head==true)
+	{ //handle entire function
+		printf("function %s\n",cfg[i].content);
+		for (int p = i; p < i + cfg[i].args; p++)
+		{
+			printf("bb:%d\n\tv%d := a%d\n",p+1,p+1,p-i+1);
+			if (p< i + cfg[i].args-1)
+				printf("\tbr bb%d\n",p+2);
+			else
+				printf("\tbr bb%d\n",p+3);
+		}
+
+		//printf("ENTRY: %d\n",i+1+cfg[i].args);
+		int eof = 0;
+		for (int p = cfg[i].points1; cfg[p].points1!=0; eof=p)
+		{
+			int branch=cfg[p].points1;
+			//printf("YARGH: %d %c\n",p,cfg[p+1].calls[0]);
+			int fall_back = p;
+			while (cfg[p+1].calls[0]!='\0')
+			{
+				branch=++cur_blocks;
+				//printf("function at p=%d %s\n",p,cfg[p+1].content);
+			//need to push on arguments
+				
+				if (p==fall_back)
+				{	
+					printf("bb%d:\n\t",p);
+					printf("%s\n\t",cfg[p].content);
+					printf("br bb%d\n",branch);
+				}
+				
+				
+				for(int f = 1 ; f<=cfg[p+1].args; f++)
+				{
+					printf("bb%d:\n",cur_blocks);
+					printf("\ta%d := v%d\n",f,p-cfg[p+1].args+f);
+					printf("\tbr bb%d\n",++cur_blocks);
+				}
+				
+				printf("bb%d:\n",cur_blocks);
+				printf("\tcall %s\n", cfg[p+1].calls);
+				printf("\tbr bb%d\n",p+1);
+
+				printf("bb%d:\n",p+1);
+				printf("\tv%d := rv\n",p+1);
+
+				if (cfg[p+2].calls[0]!='\0')
+					branch = cur_blocks+1;
+				else branch = p+2;
+
+				if (cfg[p+1].points2>0)
+				{
+					printf("\tbr v%d bb%d bb%d\n",p+1,branch,cfg[p+1].points2);
+				}
+				else
+				{
+					printf("\tbr bb%d\n",p+1);
+				}
+				p++;
+
+
+
+			}
+			if (fall_back==p)
+			{
+				int l_val=0;
+				int r_val=0;
+				char temp[10] = {0};
+				if(cfg[p].points1==cfg[p+1].points1 || cfg[p].points1==cfg[p-1].points1)
+				{
+					//printf("FOUND\n");
+					l_val=cfg[p].points1;
+			
+					int bound=strlen(cfg[p].content)-1;
+					while (bound>0 && cfg[p].content[bound]!=' ')
+						bound--;
+					//printf("DIGIT %s\n",cfg[p].content+bound);
+					strcpy(temp, cfg[p].content+bound+1);
+					//printf("TEMP:%s\n",temp);
+				}
+
+			
+				//printf("RAH: %c %c %c\n",cfg[p].content[0],cfg[p].content[1],cfg[p].content[2]);
+				if(cfg[p].content[0]=='i' && cfg[p].content[1]=='f' && cfg[p].content[2]==' ')
+				{
+					//printf("IF THEN \n");
+					l_val=cfg[p].points1;
+					r_val=p;
+				}
+
+
+				printf("bb%d:\n\t",p);
+
+				if(l_val!=0 && temp[0]!=0)
+				{
+					printf("v%d = %s\n\t",l_val,temp);
+				}
+				else if (l_val!=0)
+				{
+					printf("v%d = v%d\n\t",l_val,r_val);
+				}
+				else
+				{
+					printf("%s\n\t",cfg[p].content);
+				}
+				if(cfg[p].points2>0)
+				{
+					printf("br v%d bb%d bb%d\n",p,branch,cfg[p].points2);
+				}	
+				else {printf("br bb%d\n",cfg[p].points1);} 
+
+			
+				if (cfg[p].points1<p)
+				{
+					//printf("SPECIAL\n");
+					printf("bb:%d\n\t",cfg[p].points1);
+					printf("v%d := v%d\n\t",cfg[p].points1,p);
+					printf("br bb%d\n",p+1);
+				}
+			}
+			p++;
+
+		}
+
+
+		printf("bb%d:\n\t",eof);
+		if(cfg[eof].content[0]=='i' && cfg[eof].content[1]=='f' && cfg[eof].content[2]==' ')
+		{
+
+		}
+		else
+		{
+			printf("%s\n\t",cfg[eof].content);
+		}
+		printf("br bb%d\n",++cur_blocks);
+		
+		printf("bb%d:\n\t",cur_blocks);
+		printf("rv =: v%d\n",eof);
+		
+
+		
+
+		printf("\n\n\n");
+	}
+  }
 
 
  fprintf(cfp, "}\n ");
